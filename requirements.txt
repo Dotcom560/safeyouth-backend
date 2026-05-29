@@ -3,7 +3,7 @@ djangorestframework==3.14.0
 django-cors-headers==4.3.1
 djangorestframework-simplejwt==5.3.0
 django-filter==23.5
-Pillow==10.0.0   # Uncomment if you need image processing
+#Pillow==10.0.0   # Uncomment if you need image processing
 psycopg2-binary==2.9.9
 python-dotenv==1.0.0
 google-cloud-firestore==2.13.0
