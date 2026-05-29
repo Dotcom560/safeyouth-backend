@@ -1,0 +1,23 @@
+# render.yaml
+services:
+  - type: web
+    name: safeyouth-backend
+    runtime: python
+    repo: https://github.com/YOUR_USERNAME/safeyouth-backend
+    plan: free
+    region: frankfurt  # Closest to Ghana
+    buildCommand: chmod +x build.sh && ./build.sh
+    startCommand: gunicorn safeyouth_api.wsgi:application --settings=safeyouth_api.settings_production
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: safeyouth_api.settings_production
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+      - key: CSRF_TRUSTED_ORIGINS
+        value: https://*.onrender.com
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://your-frontend.netlify.app
+      - key: PYTHON_VERSION
+        value: 3.11.0
