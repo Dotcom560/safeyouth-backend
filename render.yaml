@@ -1,5 +1,3 @@
-# render.yaml
-# SafeYouth AI Backend Deployment Configuration
 services:
   - type: web
     name: safeyouth-backend
@@ -8,11 +6,10 @@ services:
     plan: free
     region: oregon
     branch: main
+    rootDir: backend
 
-    # Build Configuration
     buildCommand: |
-      echo "🚀 Starting SafeYouth AI Build Process..."
-      echo "📦 Installing dependencies..."
+      echo "🚀 Installing dependencies..."
       pip install --upgrade pip
       pip install -r requirements.txt
       echo "🗄️ Running migrations..."
@@ -29,90 +26,26 @@ else:
 EOF
       echo "📁 Collecting static files..."
       python manage.py collectstatic --noinput --settings=safeyouth_api.settings_production
-      echo "✅ Build completed!"
+      echo "✅ Build done"
 
-    # Start Command – FIXED for Django
-    startCommand: gunicorn safeyouth_api.wsgi:application --settings=safeyouth_api.settings_production
-
-    # Resource scaling
-    scaling:
-      minInstances: 0
-      maxInstances: 1
-
-    # Health check endpoint
-    healthCheckPath: /health/
+    startCommand: gunicorn safeyouth_api.wsgi:application --bind 0.0.0.0:$PORT --log-file -
 
     envVars:
-      # Django core
       - key: DJANGO_SETTINGS_MODULE
         value: safeyouth_api.settings_production
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: DEBUG
-        value: False
+        value: false
       - key: ALLOWED_HOSTS
         value: safeyouth-backend.onrender.com,localhost,127.0.0.1
       - key: CSRF_TRUSTED_ORIGINS
         value: https://safeyouth-backend.onrender.com,https://*.onrender.com
       - key: CORS_ALLOWED_ORIGINS
         value: https://safeyouth-frontend.netlify.app,https://*.netlify.app
-
-      # Python version (Render will respect this)
       - key: PYTHON_VERSION
         value: 3.11.0
-
-      # Prevent concurrency warnings
       - key: WEB_CONCURRENCY
         value: "1"
-
-      # Database (your existing credentials)
       - key: DATABASE_URL
         value: postgresql://safeyouth_user:frbrf5yYIjHwr2W9XoRrRA8wj2gFhWWw@dpg-d8crdak2m8qs73e24fng-a.oregon-postgres.render.com/safeyouth_db
-      - key: DB_HOST
-        value: dpg-d8crdak2m8qs73e24fng-a.oregon-postgres.render.com
-      - key: DB_NAME
-        value: safeyouth_db
-      - key: DB_USER
-        value: safeyouth_user
-      - key: DB_PASSWORD
-        value: frbrf5yYIjHwr2W9XoRrRA8wj2gFhWWw
-      - key: DB_PORT
-        value: "5432"
-
-      # Firebase / AI / Email / SMS (set `sync: false` variables in Dashboard)
-      - key: FIREBASE_CREDENTIALS_JSON
-        sync: false
-      - key: FIREBASE_STORAGE_BUCKET
-        value: safeyouth-ai.firebasestorage.app
-      - key: GEMINI_API_KEY
-        sync: false
-      - key: OPENAI_API_KEY
-        sync: false
-      - key: GOOGLE_MAPS_API_KEY
-        sync: false
-      - key: EMAIL_HOST_USER
-        sync: false
-      - key: EMAIL_HOST_PASSWORD
-        sync: false
-      - key: DEFAULT_FROM_EMAIL
-        value: noreply@safeyouth.com
-      - key: EMAIL_HOST
-        value: smtp.gmail.com
-      - key: EMAIL_PORT
-        value: "587"
-      - key: EMAIL_USE_TLS
-        value: "True"
-      - key: AFRICAS_TALKING_API_KEY
-        sync: false
-      - key: AFRICAS_TALKING_USERNAME
-        sync: false
-      - key: SMS_SENDER_ID
-        value: SafeYouthAI
-      - key: LOG_LEVEL
-        value: INFO
-      - key: ENVIRONMENT
-        value: production
-      - key: COUNSELOR_EMAIL
-        value: counselor@safeyouth.com
-
-previewsEnabled: false
