@@ -6,22 +6,19 @@ services:
   - type: web
     name: safeyouth-backend
     runtime: python
-    repo: https://github.com/Dotcom560/safeyouth-backend  # Updated with your actual repo
+    repo: https://github.com/Dotcom560/safeyouth-backend
     plan: free
-    region: oregon  # Changed to match your database region (Oregon)
+    region: oregon
     branch: main
     
     # Build Configuration
     buildCommand: |
-  echo "🚀 Starting SafeYouth AI Build Process..."
-  # Python version is now controlled by runtime.txt
-  echo "📦 Installing dependencies..."
-  pip install --upgrade pip
-  pip install -r requirements.txt
-  python manage.py migrate --settings=safeyouth_api.settings_production
-  python manage.py collectstatic --noinput --settings=safeyouth_api.settings_production
-      
-      # Create superuser automatically (if not exists)
+      echo "🚀 Starting SafeYouth AI Build Process..."
+      echo "📦 Installing dependencies..."
+      pip install --upgrade pip
+      pip install -r requirements.txt
+      echo "🗄️ Running migrations..."
+      python manage.py migrate --settings=safeyouth_api.settings_production
       echo "👑 Creating superuser..."
       python manage.py shell --settings=safeyouth_api.settings_production << EOF
 from django.contrib.auth import get_user_model
@@ -32,11 +29,8 @@ if not User.objects.filter(username='admin').exists():
 else:
     print('✅ Superuser already exists')
 EOF
-      
-      # Collect static files
       echo "📁 Collecting static files..."
       python manage.py collectstatic --noinput --settings=safeyouth_api.settings_production
-      
       echo "✅ Build completed successfully!"
     
     # Start Command
@@ -44,8 +38,8 @@ EOF
     
     # Auto-scaling (free tier limits)
     scaling:
-      minInstances: 0  # Scales to zero when inactive (free tier)
-      maxInstances: 1   # Free tier limit
+      minInstances: 0
+      maxInstances: 1
     
     # Health Check Configuration
     healthCheckPath: /health/
@@ -80,13 +74,17 @@ EOF
         value: 3.11.0
       
       # ============================================
-      # DATABASE CONFIGURATION (UPDATED)
+      # WEB CONCURRENCY
       # ============================================
-      # Main database connection string
+      - key: WEB_CONCURRENCY
+        value: "1"
+      
+      # ============================================
+      # DATABASE CONFIGURATION
+      # ============================================
       - key: DATABASE_URL
         value: postgresql://safeyouth_user:frbrf5yYIjHwr2W9XoRrRA8wj2gFhWWw@dpg-d8crdak2m8qs73e24fng-a.oregon-postgres.render.com/safeyouth_db
       
-      # Individual database variables (fallback)
       - key: DB_HOST
         value: dpg-d8crdak2m8qs73e24fng-a.oregon-postgres.render.com
       
@@ -100,13 +98,13 @@ EOF
         value: frbrf5yYIjHwr2W9XoRrRA8wj2gFhWWw
       
       - key: DB_PORT
-        value: 5432
+        value: "5432"
       
       # ============================================
       # FIREBASE CONFIGURATION
       # ============================================
       - key: FIREBASE_CREDENTIALS_JSON
-        sync: false  # Set this manually in Render dashboard
+        sync: false
       
       - key: FIREBASE_STORAGE_BUCKET
         value: safeyouth-ai.firebasestorage.app
@@ -115,25 +113,25 @@ EOF
       # AI APIs
       # ============================================
       - key: GEMINI_API_KEY
-        sync: false  # Set this manually in Render dashboard
+        sync: false
       
       - key: OPENAI_API_KEY
-        sync: false  # Optional - set if using OpenAI
+        sync: false
       
       # ============================================
       # GOOGLE MAPS API
       # ============================================
       - key: GOOGLE_MAPS_API_KEY
-        sync: false  # Set this manually in Render dashboard
+        sync: false
       
       # ============================================
       # EMAIL CONFIGURATION
       # ============================================
       - key: EMAIL_HOST_USER
-        sync: false  # Set your email
+        sync: false
       
       - key: EMAIL_HOST_PASSWORD
-        sync: false  # Set your app password
+        sync: false
       
       - key: DEFAULT_FROM_EMAIL
         value: noreply@safeyouth.com
@@ -142,10 +140,10 @@ EOF
         value: smtp.gmail.com
       
       - key: EMAIL_PORT
-        value: 587
+        value: "587"
       
       - key: EMAIL_USE_TLS
-        value: True
+        value: "True"
       
       # ============================================
       # SMS CONFIGURATION (Africa's Talking)
@@ -166,12 +164,6 @@ EOF
         value: INFO
       
       # ============================================
-      # SENTRY MONITORING (Optional)
-      # ============================================
-      # - key: SENTRY_DSN
-      #   sync: false
-      
-      # ============================================
       # ENVIRONMENT
       # ============================================
       - key: ENVIRONMENT
@@ -184,21 +176,6 @@ EOF
         value: counselor@safeyouth.com
 
 # ============================================
-# POSTGRESQL DATABASE SERVICE (Uncomment to create)
-# ============================================
-# - type: postgresql
-#   name: safeyouth-db
-#   plan: free
-#   region: oregon
-#   databaseName: safeyouth_db
-#   user: safeyouth_user
-#   ipAllowList: []  # Allow all connections (secured by password)
-
-# ============================================
 # GLOBAL SETTINGS
 # ============================================
-previewsEnabled: false  # Disable preview environments for free tier
-
-# Build settings (remove if not using Docker)
-# build:
-#   dockerfilePath: ./Dockerfile  # Optional - remove if not using Docker
+previewsEnabled: false
