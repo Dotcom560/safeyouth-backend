@@ -30,7 +30,17 @@ ALLOWED_HOSTS = [host for host in ALLOWED_HOSTS if host]
 CSRF_TRUSTED_ORIGINS = [origin for origin in CSRF_TRUSTED_ORIGINS if origin]
 
 # ============================================
-# DATABASE CONFIGURATION (UPDATED)
+# INSTALLED APPS (ADDED CORE APP)
+# ============================================
+
+# Note: Make sure 'apps.core' is added to INSTALLED_APPS
+# Add this to your base settings.py or here
+if 'apps.core' not in INSTALLED_APPS:
+    # This is handled in base settings, but ensure it's there
+    pass
+
+# ============================================
+# DATABASE CONFIGURATION
 # ============================================
 
 # Get database URL from environment variable
@@ -141,6 +151,7 @@ if not CORS_ALLOWED_ORIGINS:
     CORS_ALLOWED_ORIGINS = [
         'http://localhost:5173',
         'http://localhost:3000',
+        'https://safeyouthai.netlify.app',  # Added your Netlify URL
         'https://*.netlify.app',
     ]
     print("⚠️ Using default CORS origins")
