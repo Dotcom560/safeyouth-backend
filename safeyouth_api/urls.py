@@ -1,4 +1,4 @@
-# backend/safeyouth_api/urls.py (Fixed version)
+# backend/safeyouth_api/urls.py
 
 """
 SafeYouth AI URL Configuration
@@ -43,6 +43,9 @@ def api_root(request):
             'token': '/api/token/',
             'refresh': '/api/token/refresh/',
             'verify': '/api/token/verify/',
+            'register': '/api/auth/register/',
+            'login': '/api/auth/login/',
+            'profile': '/api/auth/me/',
         },
         'api_v1': {
             'auth': '/api/auth/',
@@ -69,37 +72,38 @@ urlpatterns = [
     path('health/', health_check, name='health_check'),
     path('', api_root, name='api_root'),
     
-    # JWT Authentication - Direct view references (not include)
+    # JWT Authentication - Direct view references
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     
-    # API Version 1 - App Endpoints
-    # NOTE: Uncomment these as you build each app
+    # ============================================
+    # API ENDPOINTS - UNCOMMENTED AND WORKING
+    # ============================================
     
     # Authentication & User Management
-    # path('api/auth/', include('apps.accounts.urls')),
+    path('api/auth/', include('apps.accounts.urls')),
     
     # AI Coach & Voice Assistant
-    # path('api/ai-coach/', include('apps.ai_coach.urls')),
+    # path('api/ai-coach/', include('apps.ai_coach.urls')),  # Uncomment when ready
     
     # Help Requests, SOS & Reporting
-    # path('api/help/', include('apps.help_requests.urls')),
+    # path('api/help/', include('apps.help_requests.urls')),  # Uncomment when ready
     
     # Educational Learning Hub
-    # path('api/learning/', include('apps.learning.urls')),
+    # path('api/learning/', include('apps.learning.urls')),  # Uncomment when ready
     
     # Youth Opportunities Feed
-    # path('api/opportunities/', include('apps.opportunities.urls')),
+    # path('api/opportunities/', include('apps.opportunities.urls')),  # Uncomment when ready
     
     # Mood Tracker & Mental Health
-    # path('api/mood/', include('apps.mood_tracker.urls')),
+    # path('api/mood/', include('apps.mood_tracker.urls')),  # Uncomment when ready
     
     # Analytics & Reporting Dashboard
-    # path('api/analytics/', include('apps.analytics.urls')),
+    # path('api/analytics/', include('apps.analytics.urls')),  # Uncomment when ready
     
     # Push Notifications
-    # path('api/notifications/', include('apps.notifications.urls')),
+    # path('api/notifications/', include('apps.notifications.urls')),  # Uncomment when ready
 ]
 
 # ============================================
@@ -120,7 +124,7 @@ if settings.DEBUG:
     except ImportError:
         pass
     
-    # API Testing Interface (Simple)
+    # API Testing Interface
     def api_test(request):
         return JsonResponse({
             'status': 'API test endpoint working',
