@@ -16,7 +16,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR / 'apps'))
 
 # ============================================
-# SENTRY MONITORING SETUP (STEP 5)
+# SECURITY WARNINGS
+# ============================================
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-8x!qq7@2k#9$v&p%m^l*z*c(_f+g=h/j?k,l;:<>?[]{}~`')
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
+
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+
+# ============================================
+# SENTRY MONITORING SETUP (Conditional)
 # ============================================
 SENTRY_DSN = os.getenv('SENTRY_DSN', '')
 
@@ -34,18 +44,11 @@ if SENTRY_DSN and not DEBUG:
                 CeleryIntegration(),
                 RedisIntegration(),
             ],
-            # Set traces_sample_rate to 1.0 to capture 100% of transactions
-            # We recommend adjusting this value in production
             traces_sample_rate=float(os.getenv('SENTRY_TRACES_SAMPLE_RATE', '0.1')),
-            # Set profiles_sample_rate to 1.0 to profile 100% of sampled transactions
             profiles_sample_rate=float(os.getenv('SENTRY_PROFILES_SAMPLE_RATE', '0.1')),
-            # Capture request bodies
             send_default_pii=False,
-            # Environment
             environment=os.getenv('ENVIRONMENT', 'production'),
-            # Release version (set via environment variable in CI/CD)
             release=os.getenv('GIT_COMMIT_SHA', 'unknown'),
-            # Before sending event callback
             before_send=lambda event, hint: event,
         )
         print(f"✅ Sentry initialized with DSN: {SENTRY_DSN[:30]}...")
@@ -55,17 +58,7 @@ if SENTRY_DSN and not DEBUG:
         print(f"⚠️ Sentry initialization failed: {e}")
 
 # ============================================
-# SECURITY WARNINGS
-# ============================================
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-8x!qq7@2k#9$v&p%m^l*z*c(_f+g=h/j?k,l;:<>?[]{}~`')
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
-
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
-
-# ============================================
-# PRODUCTION SECURITY HEADERS (Step 2)
+# PRODUCTION SECURITY HEADERS
 # ============================================
 if not DEBUG:
     # Tell Django it's behind a proxy that handles HTTPS
@@ -87,14 +80,10 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', '31536000'))
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
-    
-    # CSP (Content Security Policy) - Optional, uncomment if needed
-    # CSP_DEFAULT_SRC = ("'self'",)
-    # CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", 'https://cdn.sentry.io')
-    # CSP_STYLE_SRC = ("'self'", "'unsafe-inline'")
-    # CSP_IMG_SRC = ("'self'", "data:", "https:")
 
-# Application definition
+# ============================================
+# APPLICATION DEFINITION
+# ============================================
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -109,13 +98,14 @@ INSTALLED_APPS = [
     'channels',
     'rest_framework_simplejwt',
     'django_filters',
-    'whitenoise.runserver_nostatic',  # For static files in production
+    'whitenoise.runserver_nostatic',
     
-    # Celery apps (for async tasks)
+    # Celery apps
     'django_celery_results',
     'django_celery_beat',
     
     # Local apps (using 'apps.' prefix since they're in apps folder)
+    'apps.core',  # ADDED - Core app for error handlers
     'apps.accounts',
     'apps.ai_coach',
     'apps.help_requests',
@@ -128,7 +118,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # For static files (Step 2)
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -175,11 +165,9 @@ CHANNEL_LAYERS = {
 # ============================================
 # DATABASE CONFIGURATION
 # ============================================
-# Support both SQLite (development) and PostgreSQL (production)
 DATABASE_URL = os.getenv('DATABASE_URL', '')
 
 if DATABASE_URL:
-    # Production database (PostgreSQL)
     import dj_database_url
     DATABASES = {
         'default': dj_database_url.config(
@@ -189,7 +177,6 @@ if DATABASE_URL:
         )
     }
 else:
-    # Development database (SQLite)
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -220,41 +207,41 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'Africa/Accra'  # Ghana timezone
+TIME_ZONE = 'Africa/Accra'
 USE_I18N = True
 USE_TZ = True
 
 # ============================================
-# STATIC & MEDIA FILES (Production Ready)
+# STATIC & MEDIA FILES
 # ============================================
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
-]
+] if os.path.exists(os.path.join(BASE_DIR, 'static')) else []
 
-# WhiteNoise compression and caching (for production)
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Media files (User uploaded content)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ============================================
-# CORS SETTINGS (Step 4)
+# CORS SETTINGS
 # ============================================
-CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only allow all origins in development
+CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 if not DEBUG:
     CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', '').split(',')
+    CORS_ALLOWED_ORIGINS = [origin for origin in CORS_ALLOWED_ORIGINS if origin]
 else:
     CORS_ALLOWED_ORIGINS = [
         "http://localhost:3000",
         "http://localhost:5173",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:5173",
+        "https://safeyouthai.netlify.app",
     ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -270,7 +257,6 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
-# Preflight cache duration (in seconds)
 CORS_PREFLIGHT_MAX_AGE = 86400
 
 # ============================================
@@ -326,7 +312,7 @@ SIMPLE_JWT = {
 }
 
 # ============================================
-# FIREBASE CONFIGURATION (Step 3)
+# FIREBASE CONFIGURATION
 # ============================================
 FIREBASE_CREDENTIALS_PATH = os.getenv('FIREBASE_CREDENTIALS_PATH', 'firebase-credentials.json')
 FIREBASE_STORAGE_BUCKET = os.getenv('FIREBASE_STORAGE_BUCKET', 'safeyouth-ai.firebasestorage.app')
@@ -350,7 +336,7 @@ FCM_SENDER_ID = os.getenv('FCM_SENDER_ID', '')
 GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY', '')
 
 # ============================================
-# SMS CONFIGURATION (Africa's Talking / Hubtel)
+# SMS CONFIGURATION
 # ============================================
 AFRICAS_TALKING_API_KEY = os.getenv('AFRICAS_TALKING_API_KEY', '')
 AFRICAS_TALKING_USERNAME = os.getenv('AFRICAS_TALKING_USERNAME', '')
@@ -368,7 +354,6 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@safeyouth.com')
 
-# Counselor email for high-risk alerts
 COUNSELOR_EMAIL = os.getenv('COUNSELOR_EMAIL', 'counselor@safeyouth.com')
 
 # ============================================
@@ -402,10 +387,6 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
         },
-        'sentry': {
-            'level': 'ERROR',
-            'class': 'sentry_sdk.integrations.logging.EventHandler',
-        },
     },
     'root': {
         'handlers': ['console'],
@@ -418,7 +399,7 @@ LOGGING = {
             'propagate': True,
         },
         'django.request': {
-            'handlers': ['sentry', 'console'],
+            'handlers': ['console'],
             'level': 'ERROR',
             'propagate': False,
         },
@@ -429,6 +410,18 @@ LOGGING = {
         },
     },
 }
+
+# Add Sentry handler only if sentry_sdk is available
+if SENTRY_DSN and not DEBUG:
+    try:
+        import sentry_sdk
+        LOGGING['handlers']['sentry'] = {
+            'level': 'ERROR',
+            'class': 'sentry_sdk.integrations.logging.EventHandler',
+        }
+        LOGGING['loggers']['django.request']['handlers'].append('sentry')
+    except ImportError:
+        pass
 
 # Ensure logs directory exists
 os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
@@ -443,40 +436,41 @@ CACHES = {
     }
 }
 
-# Redis cache for production (if available)
 REDIS_URL = os.getenv('REDIS_URL', '')
 if REDIS_URL and not DEBUG:
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-            'LOCATION': REDIS_URL,
-            'OPTIONS': {
-                'client_class': 'django_redis.client.DefaultClient',
+    try:
+        CACHES = {
+            'default': {
+                'BACKEND': 'django_redis.cache.RedisCache',
+                'LOCATION': REDIS_URL,
+                'OPTIONS': {
+                    'client_class': 'django_redis.client.DefaultClient',
+                }
             }
         }
-    }
+        print("✅ Redis cache configured")
+    except ImportError:
+        print("⚠️ django-redis not installed. Using local memory cache.")
 
 # ============================================
 # CELERY CONFIGURATION
 # ============================================
-CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
-CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'django-db')
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = TIME_ZONE
-CELERY_TASK_TRACK_STARTED = True
-CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
-CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60
-CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
-CELERY_RESULT_BACKEND = 'django-db'
-CELERY_CACHE_BACKEND = 'default'
-CELERY_RESULT_EXTENDED = True
-
-# ============================================
-# CUSTOM USER MODEL (Optional)
-# ============================================
-# AUTH_USER_MODEL = 'accounts.CustomUser'
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', '')
+if CELERY_BROKER_URL:
+    CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'django-db')
+    CELERY_ACCEPT_CONTENT = ['json']
+    CELERY_TASK_SERIALIZER = 'json'
+    CELERY_RESULT_SERIALIZER = 'json'
+    CELERY_TIMEZONE = TIME_ZONE
+    CELERY_TASK_TRACK_STARTED = True
+    CELERY_TASK_TIME_LIMIT = 30 * 60
+    CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60
+    CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+    CELERY_CACHE_BACKEND = 'default'
+    CELERY_RESULT_EXTENDED = True
+    print("✅ Celery configured")
+else:
+    print("⚠️ CELERY_BROKER_URL not set. Celery tasks will run synchronously.")
 
 # ============================================
 # DJANGO ADMIN SETTINGS
@@ -488,16 +482,17 @@ ADMIN_INDEX_TITLE = "Welcome to SafeYouth AI Admin Panel"
 # ============================================
 # STARTUP STATUS
 # ============================================
+print("=" * 60)
 print(f"✅ Settings loaded with DEBUG={DEBUG}")
 print(f"📁 Base directory: {BASE_DIR}")
 print(f"🔧 Apps directory: {BASE_DIR / 'apps'}")
+print(f"🗄️ Database: {'PostgreSQL' if DATABASE_URL else 'SQLite'}")
+print(f"🔐 CORS Mode: {'Allow All' if CORS_ALLOW_ALL_ORIGINS else 'Restricted'}")
+if not CORS_ALLOW_ALL_ORIGINS:
+    print(f"   Allowed Origins: {CORS_ALLOWED_ORIGINS}")
+print("=" * 60)
 
 if SENTRY_DSN and not DEBUG:
     print(f"✅ Sentry monitoring enabled")
 else:
     print(f"⚠️ Sentry monitoring disabled (DSN not set or DEBUG=True)")
-
-if DATABASE_URL:
-    print(f"✅ Using PostgreSQL database")
-else:
-    print(f"✅ Using SQLite database (development)")
