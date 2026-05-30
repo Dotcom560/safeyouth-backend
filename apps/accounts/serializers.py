@@ -6,9 +6,10 @@ from django.contrib.auth.password_validation import validate_password
 class UserSerializer(serializers.ModelSerializer):
     """
     Serializer for user registration
+    Supports both single password and password+password2 validation
     """
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
-    password2 = serializers.CharField(write_only=True, required=True)
+    password2 = serializers.CharField(write_only=True, required=False, allow_blank=True)
 
     class Meta:
         model = User
@@ -19,12 +20,16 @@ class UserSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, attrs):
-        if attrs['password'] != attrs['password2']:
-            raise serializers.ValidationError({"password": "Password fields didn't match."})
+        # Only validate password2 if it was provided
+        if 'password2' in attrs and attrs.get('password2'):
+            if attrs['password'] != attrs['password2']:
+                raise serializers.ValidationError({"password": "Password fields didn't match."})
         return attrs
 
     def create(self, validated_data):
-        validated_data.pop('password2')
+        # Remove password2 if it exists
+        validated_data.pop('password2', None)
+        
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data.get('email', ''),
